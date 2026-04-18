@@ -1,0 +1,1 @@
+"""Organized FastAPI app package."""

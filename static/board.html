@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("internship-board-theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+    })();
+  </script>
+  <title>实习任务看板</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3efe6;
+      --panel: #fffaf1;
+      --panel-strong: #fffdf8;
+      --panel-glass: rgba(255, 250, 241, 0.86);
+      --text: #1e1a17;
+      --muted: #6a5d54;
+      --line: #d7cabb;
+      --accent: #1f6f5f;
+      --accent-soft: #d8ebe6;
+      --accent-strong: #11473d;
+      --warning: #8d5b2d;
+      --shadow: 0 18px 40px rgba(72, 51, 32, 0.09);
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #101715;
+      --panel: #17211e;
+      --panel-strong: #1d2925;
+      --panel-glass: rgba(23, 33, 30, 0.9);
+      --text: #f4eadc;
+      --muted: #b9aa99;
+      --line: #35443e;
+      --accent: #7ed8bd;
+      --accent-soft: #243d35;
+      --accent-strong: #baf3df;
+      --warning: #f0b46b;
+      --shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #fff8e6 0, transparent 22rem),
+        radial-gradient(circle at top right, #e6f4ef 0, transparent 20rem),
+        linear-gradient(180deg, #f8f3ea 0%, var(--bg) 100%);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top left, rgba(126, 216, 189, 0.18) 0, transparent 22rem),
+        radial-gradient(circle at top right, rgba(240, 180, 107, 0.12) 0, transparent 20rem),
+        linear-gradient(180deg, #15211d 0%, var(--bg) 100%);
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow,
+    .panel-kicker,
+    .meta-label {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 54px);
+      line-height: 0.98;
+    }
+
+    .subtitle {
+      max-width: 560px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .meta-card,
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel-glass);
+      box-shadow: var(--shadow);
+      border-radius: 24px;
+    }
+
+    .meta-card {
+      padding: 18px;
+    }
+
+    .meta-card strong {
+      display: block;
+      font-size: 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .date-controls,
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button,
+    input[type="date"] {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel-strong);
+      color: var(--text);
+      padding: 10px 14px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    button:focus-visible,
+    input[type="date"]:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+      outline-offset: 2px;
+    }
+
+    .secondary {
+      color: var(--warning);
+    }
+
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+      gap: 18px;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .status-badge {
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      padding: 8px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .task-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .task-card {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      border-radius: 20px;
+      padding: 16px;
+    }
+
+    .task-card.done {
+      opacity: 0.68;
+    }
+
+    .task-card.done .task-title {
+      text-decoration: line-through;
+    }
+
+    .task-top {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .task-checkbox {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      margin-top: 2px;
+    }
+
+    .task-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .task-title {
+      font-size: 18px;
+    }
+
+    .task-meta {
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .task-detail {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-block h3 {
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--accent-strong);
+    }
+
+    .detail-block ul,
+    .rationale-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .focus-text {
+      color: var(--text);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+
+    .empty {
+      padding: 20px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 840px) {
+      .hero,
+      .board {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .hero-meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Local Task Board</p>
+        <h1>实习任务看板</h1>
+        <p class="subtitle">数据来自 SQLite app.db，页面只负责展示和更新完成状态。</p>
+      </div>
+      <div class="hero-meta">
+        <div class="meta-card">
+          <span class="meta-label">当前日期</span>
+          <strong id="display-date">-</strong>
+        </div>
+        <div class="meta-card">
+          <span class="meta-label">完成进度</span>
+          <strong id="progress-text">0 / 0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="date-controls">
+        <button id="prev-day" type="button">前一天</button>
+        <input id="date-picker" type="date">
+        <button id="next-day" type="button">后一天</button>
+      </div>
+      <div class="toolbar-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <span id="theme-toggle-text">夜间模式</span>
+        </button>
+        <button id="jump-today" type="button">跳到今天</button>
+        <button id="reset-day" type="button" class="secondary">重置当天</button>
+      </div>
+    </section>
+
+    <section class="board">
+      <section class="panel task-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Tasks</p>
+            <h2>今日任务</h2>
+          </div>
+          <div class="status-badge" id="save-state">读取中</div>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </section>
+
+      <section class="panel notes-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">Rationale</p>
+            <h2>为什么这样安排</h2>
+          </div>
+        </div>
+
+        <div class="rationale-box">
+          <p id="day-focus" class="focus-text"></p>
+          <ul id="day-rationale" class="rationale-list"></ul>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    let availableDates = [];
+    let currentDate = "";
+    let dayData = null;
+    const THEME_KEY = "internship-board-theme";
+
+    function getSystemTheme() {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+
+    function applyTheme(theme, remember = true) {
+      const nextTheme = theme === "dark" ? "dark" : "light";
+      document.documentElement.dataset.theme = nextTheme;
+
+      const toggle = document.getElementById("theme-toggle");
+      const toggleText = document.getElementById("theme-toggle-text");
+      if (toggle) toggle.setAttribute("aria-pressed", String(nextTheme === "dark"));
+      if (toggleText) toggleText.textContent = nextTheme === "dark" ? "日间模式" : "夜间模式";
+
+      if (remember) localStorage.setItem(THEME_KEY, nextTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.dataset.theme || getSystemTheme();
+      applyTheme(currentTheme === "dark" ? "light" : "dark");
+    }
+
+    function setSaveState(text, faded = false) {
+      const saveState = document.getElementById("save-state");
+      if (!saveState) return;
+      saveState.textContent = text;
+      saveState.style.opacity = faded ? 0.55 : 1;
+    }
+
+    async function fetchJson(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    }
+
+    function chooseInitialDate() {
+      const today = new Date().toISOString().split("T")[0];
+      if (availableDates.includes(today)) return today;
+      return availableDates[0] || today;
+    }
+
+    async function loadDates() {
+      availableDates = await fetchJson("/board/api/dates");
+      currentDate = chooseInitialDate();
+    }
+
+    async function loadDay(date) {
+      setSaveState("读取中");
+      currentDate = date;
+      const picker = document.getElementById("date-picker");
+      if (picker) picker.value = currentDate;
+
+      try {
+        dayData = await fetchJson(`/board/api/days/${currentDate}`);
+        setSaveState("已从数据库读取", true);
+      } catch (error) {
+        dayData = null;
+        setSaveState("读取失败");
+      }
+
+      render();
+    }
+
+    async function updateTaskDone(taskId, done) {
+      setSaveState("保存中");
+      const updated = await fetchJson(`/board/api/tasks/${taskId}/done`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ done }),
+      });
+      setSaveState("保存成功", true);
+      return updated;
+    }
+
+    function renderEmpty(message) {
+      const list = document.getElementById("task-list");
+      if (list) list.innerHTML = `<p class="empty">${message}</p>`;
+
+      const df = document.getElementById("day-focus");
+      if (df) df.textContent = "";
+
+      const rationaleUl = document.getElementById("day-rationale");
+      if (rationaleUl) rationaleUl.innerHTML = "";
+
+      const pt = document.getElementById("progress-text");
+      if (pt) pt.textContent = "0 / 0";
+    }
+
+    function render() {
+      const picker = document.getElementById("date-picker");
+      if (picker) picker.value = currentDate;
+
+      const dDate = document.getElementById("display-date");
+      if (dDate) dDate.textContent = currentDate || "-";
+
+      if (!dayData) {
+        renderEmpty("这一天没有任务数据。");
+        return;
+      }
+
+      const df = document.getElementById("day-focus");
+      if (df) df.textContent = dayData.focus || "";
+
+      const rationaleUl = document.getElementById("day-rationale");
+      if (rationaleUl) {
+        rationaleUl.innerHTML = "";
+        (dayData.rationale || []).forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          rationaleUl.appendChild(li);
+        });
+      }
+
+      const taskList = document.getElementById("task-list");
+      if (taskList) taskList.innerHTML = "";
+
+      let doneCount = 0;
+      const tasks = dayData.tasks || [];
+
+      tasks.forEach((task) => {
+        if (task.done) doneCount += 1;
+
+        const card = document.createElement("div");
+        card.className = "task-card" + (task.done ? " done" : "");
+
+        const top = document.createElement("div");
+        top.className = "task-top";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "task-checkbox";
+        checkbox.checked = task.done;
+        checkbox.addEventListener("change", async (event) => {
+          const nextDone = event.target.checked;
+          checkbox.disabled = true;
+
+          try {
+            const updated = await updateTaskDone(task.id, nextDone);
+            task.done = updated.done;
+          } catch (error) {
+            checkbox.checked = task.done;
+            setSaveState("保存失败");
+          } finally {
+            checkbox.disabled = false;
+            render();
+          }
+        });
+
+        const main = document.createElement("div");
+        main.className = "task-main";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "task-title-row";
+
+        const titleObj = document.createElement("strong");
+        titleObj.className = "task-title";
+        titleObj.textContent = task.title;
+
+        const meta = document.createElement("span");
+        meta.className = "task-meta";
+        meta.textContent = task.eta;
+
+        titleRow.appendChild(titleObj);
+        titleRow.appendChild(meta);
+        main.appendChild(titleRow);
+
+        const detail = document.createElement("div");
+        detail.className = "task-detail";
+
+        const howBlock = document.createElement("div");
+        howBlock.className = "detail-block";
+        howBlock.innerHTML = `<h3>具体怎么做？</h3><ul>${task.how.map((h) => `<li>${h}</li>`).join("")}</ul>`;
+
+        const critBlock = document.createElement("div");
+        critBlock.className = "detail-block";
+        critBlock.innerHTML = `<h3>怎样算达标？</h3><ul>${task.criteria.map((c) => `<li>${c}</li>`).join("")}</ul>`;
+
+        detail.appendChild(howBlock);
+        detail.appendChild(critBlock);
+        main.appendChild(detail);
+        top.appendChild(checkbox);
+        top.appendChild(main);
+        card.appendChild(top);
+
+        if (taskList) taskList.appendChild(card);
+      });
+
+      const pt = document.getElementById("progress-text");
+      if (pt) pt.textContent = `${doneCount} / ${tasks.length}`;
+    }
+
+    function shiftDate(days) {
+      if (!currentDate) return;
+      const currentIndex = availableDates.indexOf(currentDate);
+      if (currentIndex !== -1) {
+        const nextDate = availableDates[currentIndex + days];
+        if (nextDate) loadDay(nextDate);
+        return;
+      }
+
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() + days);
+      loadDay(date.toISOString().split("T")[0]);
+    }
+
+    async function resetCurrentDay() {
+      if (!dayData) return;
+      for (const task of dayData.tasks || []) {
+        if (task.done) {
+          await updateTaskDone(task.id, false);
+          task.done = false;
+        }
+      }
+      render();
+    }
+
+    async function init() {
+      applyTheme(document.documentElement.dataset.theme || getSystemTheme(), false);
+      document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
+      document.getElementById("prev-day")?.addEventListener("click", () => shiftDate(-1));
+      document.getElementById("next-day")?.addEventListener("click", () => shiftDate(1));
+      document.getElementById("jump-today")?.addEventListener("click", () => {
+        const today = new Date().toISOString().split("T")[0];
+        loadDay(availableDates.includes(today) ? today : chooseInitialDate());
+      });
+      document.getElementById("reset-day")?.addEventListener("click", resetCurrentDay);
+      document.getElementById("date-picker")?.addEventListener("change", (event) => {
+        if (event.target.value) loadDay(event.target.value);
+      });
+
+      try {
+        await loadDates();
+        await loadDay(currentDate);
+      } catch (error) {
+        setSaveState("初始化失败");
+        renderEmpty("无法从后端读取任务看板数据。");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>

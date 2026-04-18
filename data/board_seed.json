@@ -1,0 +1,1432 @@
+{
+  "defaultCurrentDate": "2026-04-16",
+  "days": {
+    "2026-04-13": {
+      "title": "加练：写 5 行以内接口小结",
+      "focus": "FastAPI 最小接口日。今天只理解请求进来、Python 函数处理、JSON 返回这一条最小链路，并跑通 GET /tasks。",
+      "rationale": [
+        "当前准备顺序调整为：AI 应用工程优先，Python 后端第二，数据分析只保留 SQL 和简单统计这种辅助能力。",
+        "第一天学 FastAPI 是合理的，因为后面的 SQLite 任务数据、规则版任务安排、AI 任务安排都需要通过接口对外提供能力，否则它们只是本地脚本。",
+        "今天只做 GET /tasks，是为了先理解“请求进来 -> FastAPI 路由函数 -> Python 返回数据 -> JSON 响应”的最小链路。",
+        "今天不碰数据库、POST 请求体、Pydantic 和 AI，避免同时学习框架、SQL 和模型 API 三件事。",
+        "这里的 JSON 是接口返回格式，不是数据存储方式；项目主数据源后面仍然使用 SQLite。",
+        "接口路径统一使用 /tasks，后面不会再混用 /task。"
+      ],
+      "tasks": [
+        {
+          "id": "http-json-basics",
+          "title": "理解 HTTP / JSON / 接口的最小概念",
+          "eta": "30 分钟",
+          "how": [
+            "只学 GET、POST、请求体、响应体、状态码、JSON 这几个词。",
+            "用任务场景理解：GET /tasks 用来查询任务，POST /tasks 用来新增任务。",
+            "今天只需要真正写 GET /tasks；POST 和请求体先理解概念，后面再实现。"
+          ],
+          "criteria": [
+            "能口头解释：浏览器或 Swagger 发请求后，FastAPI 怎么把结果以 JSON 返回。"
+          ],
+          "done": true
+        },
+        {
+          "id": "install-fastapi",
+          "title": "安装并理解 FastAPI / Uvicorn",
+          "eta": "20 分钟",
+          "how": [
+            "在虚拟环境中执行 pip install fastapi uvicorn。",
+            "理解 FastAPI 负责定义接口逻辑，Uvicorn 负责把服务跑起来。"
+          ],
+          "criteria": [
+            "安装不报错，并且能说出启动命令里 uvicorn 的作用。"
+          ],
+          "done": true
+        },
+        {
+          "id": "first-route",
+          "title": "编写并启动第一个 /tasks 接口",
+          "eta": "40 分钟",
+          "how": [
+            "在 app/main.py 中引入 FastAPI，并创建 app = FastAPI()。",
+            "写一个 GET /tasks 接口，先返回一组写死的任务 JSON。",
+            "用 uvicorn app.main:app --reload 启动服务。"
+          ],
+          "criteria": [
+            "访问 http://127.0.0.1:8000/tasks 能看到任务 JSON。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-stretch-swagger",
+          "title": "加练：使用 Swagger 理解接口文档",
+          "eta": "20 分钟",
+          "how": [
+            "打开 http://127.0.0.1:8000/docs。",
+            "分别点开 GET / 和 GET /tasks，看 FastAPI 自动生成了哪些信息。",
+            "理解 Swagger 不是新框架，而是 FastAPI 帮你生成的接口调试页面。"
+          ],
+          "criteria": [
+            "你能说清楚 /docs 用来做什么，以及它为什么对后端和 AI 应用项目有帮助。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-stretch-query-param",
+          "title": "加练：给 /tasks 加 status 和 id 查询参数",
+          "eta": "35 分钟",
+          "how": [
+            "把 GET /tasks 改成可以接收 status 和 id 两个查询参数，例如 /tasks?status=pending&id=3。",
+            "如果没有传任何参数，就返回全部任务。",
+            "如果只传 status，就只返回对应状态的任务；如果只传 id，就只返回对应 id 的任务。",
+            "如果同时传 status 和 id，就两个条件都要满足。"
+          ],
+          "criteria": [
+            "访问 /tasks 返回全部任务，访问 /tasks?status=pending 只返回 pending 任务，访问 /tasks?status=pending&id=3 只返回同时匹配的任务。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-stretch-function-refactor",
+          "title": "加练：把任务过滤逻辑拆成函数",
+          "eta": "25 分钟",
+          "how": [
+            "写一个 filter_tasks_by_statusandid(status,id) 函数。",
+            "让 GET /tasks 调用这个函数，而不是把所有逻辑都写在路由函数里。",
+            "先不拆新文件，今天只练函数拆分。"
+          ],
+          "criteria": [
+            "你能解释：路由函数负责接收请求，普通函数负责处理任务数据。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-extra-path-param",
+          "title": "加练：实现status的路径参数 GET /tasks/status/{status}",
+          "eta": "35 分钟",
+          "how": [
+            "注意这不是查询参数：/tasks?status=pending 是查询参数，/tasks/status/pending 才是路径参数。",
+            "新增一个 @app.get('/tasks/status/{status}') 路由。",
+            "让 status 作为函数参数传进来，例如 def get_tasks_by_status_path(status: str)。",
+            "复用已有的 filter_tasks_by_status(status)，返回对应状态的任务。"
+          ],
+          "criteria": [
+            "访问 /tasks/status/pending 能返回 pending 任务；你能说清楚它和 /tasks?status=pending 的区别。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-extra-404",
+          "title": "加练：路径状态不存在时返回 404",
+          "eta": "30 分钟",
+          "how": [
+            "从 fastapi 导入 HTTPException。",
+            "如果 /tasks/status/{status} 找不到任何任务，raise HTTPException(status_code=404, detail='No tasks found for this status')。",
+            "用 /tasks/status/blocked 测试不存在的状态。"
+          ],
+          "criteria": [
+            "访问 /tasks/status/blocked 时返回 404，而不是空列表或程序报错。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-extra-swagger-verify",
+          "title": "加练：用 Swagger 验证路径参数和查询参数",
+          "eta": "20 分钟",
+          "how": [
+            "打开 /docs。",
+            "分别测试 /tasks、/tasks?status=pending、/tasks?status=pending&id=3、/tasks/status/pending、/tasks/status/blocked。",
+            "观察路径参数 status 和查询参数 status 在 Swagger 里的展示差异。"
+          ],
+          "criteria": [
+            "你能说清楚：/tasks?status=pending 里的 status 是查询参数，/tasks/status/pending 里的 status 是路径参数。"
+          ],
+          "done": true
+        },
+        {
+          "id": "day1-extra-api-summary",
+          "title": "加练：写 5 行以内接口小结",
+          "eta": "15 分钟",
+          "how": [
+            "在 README 或自己的 notes 里写 5 行以内即可。",
+            "包含 GET /tasks、GET /tasks?status=pending&id=3、GET /tasks/status/{status} 分别解决什么问题。",
+            "不要写长复盘。"
+          ],
+          "criteria": [
+            "你能用 1 分钟讲清楚今天写的 3 类接口。"
+          ],
+          "done": true
+        }
+      ]
+    },
+    "2026-04-14": {
+      "title": "接入 POST /tasks/ai-plan",
+      "focus": "Python 基础 + FastAPI POST。今天先把函数、模块、请求体这些共同基础补稳，再做一个内存版 POST /tasks。 同时追加原 4/15 的数据库和 AI 任务，今天原有任务保留。",
+      "rationale": [
+        "JD 里最高频的是 Python 基础和接口能力，所以数据库先后移一天。",
+        "今天不追求完整项目，只把 Python 函数拆分、FastAPI 请求体和 Swagger 调试弄清楚。",
+        "POST /tasks 先用内存列表，不接数据库，避免同时学 Pydantic、SQL 和文件拆分。",
+        "今天结束后，你应该能说清楚 GET 是查任务，POST 是新增任务。",
+        "按你的要求：4/14 现有任务不删除，原 4/15 任务整体追加到 4/14。"
+      ],
+      "tasks": [
+        {
+          "id": "python-functions-modules",
+          "title": "复习 Python 函数和模块拆分",
+          "eta": "30 分钟",
+          "how": [
+            "把昨天写死的任务列表放到一个函数里，例如 list_sample_tasks()。",
+            "理解函数参数、返回值、import 这三个点。",
+            "如果 app/main.py 已经变长，先把任务数据函数放到 app/services.py。"
+          ],
+          "criteria": [
+            "GET /tasks 仍然能访问，并且任务数据不是直接堆在路由函数里。"
+          ],
+          "done": true
+        },
+        {
+          "id": "fastapi-request-body",
+          "title": "理解 Pydantic 请求体",
+          "eta": "40 分钟",
+          "how": [
+            "用 Pydantic 的 BaseModel 定义 TaskCreate，字段包含 title 和 priority。",
+            "理解请求体 JSON 怎么变成 Python 对象。",
+            "先只接受 title 和 priority，不加复杂字段。"
+          ],
+          "criteria": [
+            "你能解释 TaskCreate 负责描述客户端提交的新任务格式。"
+          ],
+          "done": true
+        },
+        {
+          "id": "post-task-memory",
+          "title": "实现内存版 POST /tasks",
+          "eta": "35 分钟",
+          "how": [
+            "在内存任务列表里追加新任务。",
+            "POST /tasks 接收 JSON 请求体，并返回新增后的任务。",
+            "先不写 SQLite，明天再把内存数据换成数据库。"
+          ],
+          "criteria": [
+            "通过 Swagger 提交一个新任务后，GET /tasks 能看到新增任务。"
+          ],
+          "done": true
+        },
+        {
+          "id": "swagger-debug",
+          "title": "用 Swagger 调通 GET 和 POST",
+          "eta": "45 分钟",
+          "how": [
+            "打开 http://127.0.0.1:8000/docs。",
+            "分别测试 GET /tasks 和 POST /tasks。",
+            "观察成功响应和缺少 title 时的错误响应。"
+          ],
+          "criteria": [
+            "你能用 Swagger 独立发出一次 GET 请求和一次 POST 请求。"
+          ],
+          "done": true
+        },
+        {
+          "id": "python-error-reading",
+          "title": "读懂一个 Python / FastAPI 报错",
+          "eta": "25 分钟",
+          "how": [
+            "如果今天遇到报错，只挑一个最影响运行的报错看。",
+            "记录报错文件、报错行、你怎么判断原因。",
+            "不写长记录，只留 3 行以内。"
+          ],
+          "criteria": [
+            "你能说清楚今天最关键的一个报错是怎么定位的。"
+          ],
+          "done": true
+        },
+        {
+          "id": "sqlite-create-tasks-table",
+          "title": "建立 tasks 表",
+          "eta": "30 分钟",
+          "how": [
+            "用 sqlite3 连接 data/app.db。",
+            "建立 tasks 表，字段至少包含 id、title、status、priority、created_at。",
+            "理解写入类 SQL 后为什么需要 commit。"
+          ],
+          "criteria": [
+            "脚本运行后能生成 data/app.db，并且表结构存在。"
+          ],
+          "done": true
+        },
+        {
+          "id": "parameterized-sql",
+          "title": "使用参数化 SQL 写入和查询",
+          "eta": "45 分钟",
+          "how": [
+            "所有变量代入都使用 ? 占位符，例如 execute('SELECT * FROM tasks WHERE status=?', (status,))。",
+            "避免用 f-string 拼 SQL。",
+            "实现 create_task() 和 list_tasks() 两个数据库函数。"
+          ],
+          "criteria": [
+            "脚本里涉及变量的 SQL 都没有用 f-string 拼接。"
+          ],
+          "done": true
+        },
+        {
+          "id": "integrate-fastapi-sqlite",
+          "title": "把 GET /tasks 和 POST /tasks 接到 SQLite",
+          "eta": "50 分钟",
+          "how": [
+            "GET /tasks 调用 list_tasks()，返回数据库里的真实任务。",
+            "POST /tasks 调用 create_task()，把新任务写进数据库。",
+            "数据库操作先放 app/db.py，避免堆在 main.py。"
+          ],
+          "criteria": [
+            "通过 Swagger 新增任务后，刷新 GET /tasks 仍然能看到数据库里的新增数据。"
+          ],
+          "done": true
+        },
+        {
+          "id": "sql-common-queries",
+          "title": "练接口常用 SQL 查询",
+          "eta": "45 分钟",
+          "how": [
+            "写一条 SELECT * FROM tasks WHERE status=? ORDER BY priority DESC。",
+            "写一条 SELECT status, COUNT(*) FROM tasks GROUP BY status。",
+            "理解第一条支撑 /tasks/next，第二条支撑轻量状态统计。"
+          ],
+          "criteria": [
+            "至少 2 条 SQL 能独立运行，并且你能说明它们怎样支撑后端接口。"
+          ],
+          "done": true
+        },
+        {
+          "id": "tasks-next-endpoint",
+          "title": "开放规则版 GET /tasks/next 接口",
+          "eta": "30 分钟",
+          "how": [
+            "从数据库查询 pending 任务，并按 priority 排序。",
+            "接口返回下一步推荐任务，作为后续 AI 安排的规则版基线。",
+            "如果没有未完成任务，准备返回明确错误。"
+          ],
+          "criteria": [
+            "访问 /tasks/next 能看到下一步任务。"
+          ],
+          "done": true
+        },
+        {
+          "id": "http-client",
+          "title": "学习 requests 调用外部 API",
+          "eta": "40 分钟",
+          "how": [
+            "学习 headers、JSON body、Authorization token 的基本写法。",
+            "不要把 API key 写进 README 或公开文件。",
+            "先用一个最小请求确认 API 能返回内容。"
+          ],
+          "criteria": [
+            "能发送一个带认证信息的请求，并拿到响应。"
+          ],
+          "done": true
+        },
+        {
+          "id": "construct-prompt",
+          "title": "把数据库任务摘要组装成 prompt",
+          "eta": "35 分钟",
+          "how": [
+            "从数据库查询 pending 任务。",
+            "先用 SQL 或 Python 统计 pending 数量、completed 数量、最高优先级任务。",
+            "把任务标题、优先级、状态和统计摘要整理成简短 prompt。",
+            "prompt 要明确要求模型输出今天的任务顺序和理由。"
+          ],
+          "criteria": [
+            "Python 能把任务列表和统计摘要稳定转换成 prompt 字符串。"
+          ],
+          "done": true
+        },
+        {
+          "id": "json-extractor",
+          "title": "解析模型 API 返回结果",
+          "eta": "45 分钟",
+          "how": [
+            "用 response.json() 读取返回体。",
+            "按你使用的模型 API 格式取出文本内容。",
+            "给缺字段或请求失败的情况留一个简单错误处理。"
+          ],
+          "criteria": [
+            "能从 API 返回体中取出模型生成的任务安排文本。"
+          ],
+          "done": true
+        },
+        {
+          "id": "ai-final-wrapper",
+          "title": "接入 POST /tasks/ai-plan",
+          "eta": "40 分钟",
+          "how": [
+            "新增 POST /tasks/ai-plan。",
+            "流程为：查库 -> 组装 prompt -> 调用模型 -> 解析结果 -> 返回 JSON。",
+            "如果 API 暂时不可用，至少保留一个可切换的规则版 fallback。"
+          ],
+          "criteria": [
+            "调用 /tasks/ai-plan 能返回一段当天任务安排。"
+          ],
+          "done": true
+        }
+      ]
+    },
+    "2026-04-15": {
+      "title": "修补一个最影响主链路的问题",
+      "focus": "由原 4/16 前移：压缩日 2：工程化 + 接口自测 + Linux/Docker 入门。今天把原 4/17 和 4/18 合并。",
+      "rationale": [
+        "如果 main.py 越写越大，后面接数据库和 AI 会越来越乱。",
+        "结构清楚能帮助你面试时讲清楚接口、数据库和 AI 调用分别在哪里。",
+        "Git、终端和 README 是多个 JD 都会默认期待的工程习惯。",
+        "今天同时做接口自测和 Linux/Docker 入门，但 Docker 只理解概念，不要求写 Dockerfile。"
+      ],
+      "tasks": [
+        {
+          "id": "project-layout",
+          "title": "整理 app 目录结构",
+          "eta": "1 小时",
+          "how": [
+            "把接口、数据库操作、业务逻辑拆开。",
+            "建议使用 app/main.py、app/db.py、app/services.py、app/schemas.py。",
+            "拆完后重新启动服务，确认已有接口还能访问。"
+          ],
+          "criteria": [
+            "main.py 不再堆满 SQL 和业务计算。",
+            "你能解释每个文件负责什么。"
+          ],
+          "done": true
+        },
+        {
+          "id": "requirements-config",
+          "title": "补依赖文件并查看 Git 状态",
+          "eta": "45 分钟",
+          "how": [
+            "整理 requirements.txt。",
+            "把数据库路径放到一个变量或配置位置。",
+            "避免在多个文件里重复硬编码 data/app.db。",
+            "运行 git status 和 git diff，理解自己改了哪些文件。"
+          ],
+          "criteria": [
+            "新环境能根据 requirements.txt 安装依赖。",
+            "数据库路径只有一个主要配置入口。",
+            "你能说清楚 git status 和 git diff 分别在看什么。"
+          ],
+          "done": true
+        },
+        {
+          "id": "readme-short",
+          "title": "更新 README 最小运行说明",
+          "eta": "30 分钟",
+          "how": [
+            "只写项目目标、启动命令、测试命令、当前接口列表。",
+            "不要写长复盘。",
+            "保留 1 个 /tasks 和 1 个 /tasks/next 或 /tasks/ai-plan 的调用示例。"
+          ],
+          "criteria": [
+            "你隔一天回来能按 README 跑起项目。",
+            "README 不超过必要范围。"
+          ],
+          "done": true
+        },
+        {
+          "id": "manual-api-test",
+          "title": "手动测试核心接口",
+          "eta": "45 分钟",
+          "how": [
+            "用 Swagger 或浏览器测试 GET /tasks、POST /tasks、GET /tasks/next。",
+            "如果 AI 接口已接入，再测试 POST /tasks/ai-plan。",
+            "只保留成功请求样例，不写长记录。"
+          ],
+          "criteria": [
+            "核心接口至少各成功调用一次。",
+            "失败接口有明确原因。"
+          ],
+          "done": true
+        },
+        {
+          "id": "linux-docker-basics",
+          "title": "理解 Linux / Docker 最小概念",
+          "eta": "35 分钟",
+          "how": [
+            "只理解 pwd、ls、cd、python -m、pip install 这些终端命令在做什么。",
+            "只理解 Docker 的镜像、容器、端口映射三个概念。",
+            "不要求今天写 Dockerfile；如果时间够，只看一个 FastAPI Dockerfile 示例。"
+          ],
+          "criteria": [
+            "你能口头解释：为什么部署 FastAPI 时会用到 Linux 命令和 Docker。"
+          ],
+          "done": true
+        },
+        {
+          "id": "bug-fix-slot",
+          "title": "修补一个最影响主链路的问题",
+          "eta": "45 分钟",
+          "how": [
+            "从当前报错里挑一个最影响启动或接口访问的问题。",
+            "只修一个，不临时加新功能。",
+            "修完重新跑对应接口。"
+          ],
+          "criteria": [
+            "至少一个阻塞问题被解决，或者明确记录为下周首要问题。"
+          ],
+          "done": true
+        }
+      ]
+    },
+    "2026-04-16": {
+      "title": "用 Swagger 验证完整增删改查链路",
+      "focus": "看板 CRUD 核心日。只做和 Python 后端、AI 应用工程最直接相关的硬功能：让任务看板从只读变成可增删改查。",
+      "rationale": [
+        "三趣、麦多易等 Python 岗直接看接口、数据库、请求体、错误处理和 CRUD。",
+        "一起住好房、悦辰才等 AI 应用岗也需要稳定业务数据入口，AI 不能只处理静态假数据。",
+        "今天的最高标准不是堆概念，而是产出可运行接口、服务函数和测试。"
+      ],
+      "tasks": [
+        {
+          "id": "crud-schema",
+          "title": "实现看板任务创建/更新请求体模型",
+          "eta": "1 小时",
+          "how": [
+            "打开 app/schemas.py。",
+            "定义“创建看板任务”时前端必须提交的数据格式：日期、标题、预计时间、具体步骤、验收标准。",
+            "定义“更新看板任务”时前端可以提交的数据格式：标题、预计时间、具体步骤、验收标准、完成状态；这些字段可以只传一部分。",
+            "目标是让 FastAPI 自动检查请求体格式，字段缺失或类型不对时自动返回错误。",
+            "后续在 /docs 中应该能看到创建任务和更新任务分别需要提交哪些 JSON 字段。"
+          ],
+          "criteria": [
+            "“实现看板任务创建/更新请求体模型”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "crud-service",
+          "title": "实现 create/update/delete board task 服务函数",
+          "eta": "2 小时",
+          "how": [
+            "打开 app/board_services.py。",
+            "实现“保存一张新任务卡片到数据库”的功能：把任务标题、预计时间写入 board_tasks，把具体步骤和验收标准写入 board_task_steps。",
+            "实现“修改一张已有任务卡片”的功能：可以修改标题、预计时间、步骤、验收标准和完成状态。",
+            "实现“删除一张任务卡片”的功能：删除任务本身，同时删除它对应的步骤和验收标准。",
+            "如果日期不存在或任务 id 不存在，要返回明确结果，不能静默写入错误数据。"
+          ],
+          "criteria": [
+            "“实现 create/update/delete board task 服务函数”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "crud-routes",
+          "title": "开放 POST/PATCH/DELETE 看板任务接口",
+          "eta": "1.5 小时",
+          "how": [
+            "打开 app/board_routes.py。",
+            "提供一个“创建任务”的 HTTP 接口：前端提交任务内容，后端写入数据库，并返回新任务。",
+            "提供一个“更新任务”的 HTTP 接口：前端提交要修改的字段，后端更新数据库，并返回修改后的任务。",
+            "提供一个“删除任务”的 HTTP 接口：前端传任务 id，后端删除数据库里的任务和步骤。",
+            "任务或日期不存在时返回 404；请求内容不合理时返回 400 或 FastAPI 自动校验错误。"
+          ],
+          "criteria": [
+            "“开放 POST/PATCH/DELETE 看板任务接口”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "crud-tests",
+          "title": "为看板 CRUD 补单元测试",
+          "eta": "2 小时",
+          "how": [
+            "打开 tests/test_board_services.py。",
+            "写一个测试：创建任务后，再查询当天看板，能看到新任务、新步骤和新验收标准。",
+            "写一个测试：更新任务后，再查询当天看板，标题、预计时间、步骤、验收标准、完成状态都变成新值。",
+            "写一个测试：删除任务后，再查询当天看板，这个任务消失，数据库里也没有残留步骤。",
+            "写一个测试：传不存在的日期或任务 id 时，服务函数返回失败结果。"
+          ],
+          "criteria": [
+            "“为看板 CRUD 补单元测试”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "crud-verify",
+          "title": "用 Swagger 验证完整增删改查链路",
+          "eta": "1 小时",
+          "how": [
+            "启动 uvicorn app.main:app --reload。",
+            "打开 http://127.0.0.1:8000/docs。",
+            "在 Swagger 里创建一条测试任务，确认响应里有新任务 id。",
+            "再读取当天看板，确认刚创建的任务出现在任务列表里。",
+            "修改这条任务的标题或步骤，再读取当天看板确认变化已经保存。",
+            "删除这条任务，再读取当天看板确认它已经消失。"
+          ],
+          "criteria": [
+            "“用 Swagger 验证完整增删改查链路”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-17": {
+      "title": "记录一组 AI 计划接口调用示例",
+      "focus": "AI 计划核心日。把 AI 任务安排从普通 tasks 表演示，升级为基于真实看板任务的数据链路。",
+      "rationale": [
+        "AI 应用工程岗位核心是把业务数据整理成 prompt、调用模型、解析结构化结果。",
+        "一起住好房、悟舍、悦辰才都能从这个能力中直接看到岗位匹配。",
+        "fallback 是工程能力证明，说明模型不可用时系统仍可用。"
+      ],
+      "tasks": [
+        {
+          "id": "board-prompt",
+          "title": "把某一天的看板任务整理成模型可理解的 prompt",
+          "eta": "1.5 小时",
+          "how": [
+            "打开 app/api_clients.py 或新建合适的看板 AI 函数文件。",
+            "读取某一天看板里的任务数据，包括标题、预计时间、具体步骤、验收标准和完成状态。",
+            "只把未完成任务交给模型，已完成任务只作为背景或直接忽略。",
+            "把任务信息整理成清楚的中文 prompt，让模型根据任务内容安排执行顺序。",
+            "要求模型只返回 JSON，包含 ordered_tasks 和 summary，方便后端解析。"
+          ],
+          "criteria": [
+            "“把某一天的看板任务整理成模型可理解的 prompt”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "board-ai-service",
+          "title": "根据某一天看板任务生成 AI 执行计划",
+          "eta": "2 小时",
+          "how": [
+            "实现“根据某一天看板任务生成 AI 执行计划”的后端功能。",
+            "流程是：查数据库拿任务 -> 组装 prompt -> 调用模型 API -> 解析模型返回 JSON。",
+            "返回结果要包含模型建议的任务顺序、每个任务的理由、总体 summary。",
+            "模型返回格式不对时，不能让服务直接崩溃，要进入错误处理或 fallback。"
+          ],
+          "criteria": [
+            "“根据某一天看板任务生成 AI 执行计划”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "board-ai-route",
+          "title": "开放 POST /board/api/days/{date}/ai-plan",
+          "eta": "1 小时",
+          "how": [
+            "打开 app/board_routes.py。",
+            "提供一个“给某一天生成 AI 任务安排”的 HTTP 接口。",
+            "前端或 Swagger 只需要传日期，后端自动读取这一天的看板任务。",
+            "日期不存在时返回 404。",
+            "成功时返回 prompt、模型供应商、模型名和 AI 生成的计划结果。"
+          ],
+          "criteria": [
+            "“开放 POST /board/api/days/{date}/ai-plan”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "board-ai-fallback",
+          "title": "实现规则版 fallback 并补测试",
+          "eta": "1.5 小时",
+          "how": [
+            "实现“模型不可用时也能给出任务顺序”的规则版计划。",
+            "规则可以先简单按看板原顺序或任务预计时间排序，只处理未完成任务。",
+            "模型 API 报错、超时、返回非 JSON 时，接口返回规则版结果。",
+            "测试没有未完成任务时，返回空任务列表和明确 summary。"
+          ],
+          "criteria": [
+            "“实现规则版 fallback 并补测试”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "board-ai-demo",
+          "title": "记录一组 AI 计划接口调用示例",
+          "eta": "45 分钟",
+          "how": [
+            "调用 POST /board/api/days/2026-04-16/ai-plan。",
+            "保存一份成功返回示例到 README 或笔记。",
+            "如果模型不可用，保存 fallback 返回示例。",
+            "不要记录 API key。"
+          ],
+          "criteria": [
+            "“记录一组 AI 计划接口调用示例”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-18": {
+      "title": "手动验证新增、编辑、AI 推荐、删除完整流程",
+      "focus": "前后端闭环日。把 CRUD 和 AI 计划接到页面上，让项目从接口 demo 变成可操作产品原型。",
+      "rationale": [
+        "AI 应用岗不是只写后端函数，也要能把能力落到用户可操作流程里。",
+        "前端只做最小必要交互，不追求复杂设计，重点是闭环可用。",
+        "这一日直接增强项目演示价值。"
+      ],
+      "tasks": [
+        {
+          "id": "ui-create",
+          "title": "在 board.html 接入新增任务表单",
+          "eta": "1.5 小时",
+          "how": [
+            "打开 static/board.html。",
+            "在页面上增加一个“新增任务”区域。",
+            "输入内容包括任务标题、预计时间、具体步骤、验收标准。",
+            "点击提交后，把这些内容以 JSON 发送给后端创建任务接口。",
+            "创建成功后，重新读取当天任务并刷新页面。"
+          ],
+          "criteria": [
+            "“在 board.html 接入新增任务表单”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "ui-edit-delete",
+          "title": "在任务卡片接入编辑和删除",
+          "eta": "2 小时",
+          "how": [
+            "在每张任务卡片上增加“编辑”和“删除”按钮。",
+            "编辑时允许修改标题、预计时间、具体步骤和验收标准。",
+            "保存编辑后，把修改内容发送给后端更新任务接口。",
+            "删除前弹出确认，确认后调用后端删除接口，并刷新当天任务。"
+          ],
+          "criteria": [
+            "“在任务卡片接入编辑和删除”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "ui-ai-plan",
+          "title": "在页面展示 AI 推荐任务顺序",
+          "eta": "1.5 小时",
+          "how": [
+            "在页面增加“AI 推荐顺序”按钮。",
+            "点击后调用 POST /board/api/days/{date}/ai-plan。",
+            "把 ordered_tasks 和 summary 渲染到页面。",
+            "AI 推荐只展示，不直接修改原任务顺序。"
+          ],
+          "criteria": [
+            "“在页面展示 AI 推荐任务顺序”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "ui-error-state",
+          "title": "完善加载、保存、失败状态提示",
+          "eta": "1 小时",
+          "how": [
+            "统一页面上的读取中、保存中、保存成功、保存失败提示。",
+            "请求失败时显示错误信息。",
+            "提交中禁用按钮，避免重复提交。"
+          ],
+          "criteria": [
+            "“完善加载、保存、失败状态提示”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "ui-e2e",
+          "title": "手动验证新增、编辑、AI 推荐、删除完整流程",
+          "eta": "1 小时",
+          "how": [
+            "从页面新增一条任务。",
+            "编辑这条任务的标题和步骤。",
+            "调用 AI 推荐顺序。",
+            "删除这条任务并刷新页面确认消失。"
+          ],
+          "criteria": [
+            "“手动验证新增、编辑、AI 推荐、删除完整流程”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-19": {
+      "title": "写一版 3 分钟项目讲解稿",
+      "focus": "工程可信度日。补测试、README、错误处理和接口说明，让项目能被别人运行、验证和追问。",
+      "rationale": [
+        "所有工程岗都会追问项目怎么跑、接口怎么测、出错怎么办。",
+        "测试和 README 是投递材料的一部分，不是额外装饰。",
+        "这一日服务 Python 后端、AI 应用工程、AI Coding 数据岗位。"
+      ],
+      "tasks": [
+        {
+          "id": "error-handling",
+          "title": "统一核心接口 400/404/502 错误处理",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：统一核心接口 400/404/502 错误处理。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“统一核心接口 400/404/502 错误处理”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "test-suite",
+          "title": "整理并运行 py_compile 和 unittest 验证链路",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：整理并运行 py_compile 和 unittest 验证链路。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“整理并运行 py_compile 和 unittest 验证链路”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "readme-core",
+          "title": "更新 README：目标、启动、测试、接口示例",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：更新 README：目标、启动、测试、接口示例。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“更新 README：目标、启动、测试、接口示例”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "api-examples",
+          "title": "保留 CRUD 和 AI plan 的 Swagger/请求示例",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：保留 CRUD 和 AI plan 的 Swagger/请求示例。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“保留 CRUD 和 AI plan 的 Swagger/请求示例”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "project-explain",
+          "title": "写一版 3 分钟项目讲解稿",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写一版 3 分钟项目讲解稿。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写一版 3 分钟项目讲解稿”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-20": {
+      "title": "写数据分析岗可用的项目 bullet",
+      "focus": "SQL/Pandas 指标日。只做对数据分析兼投和 AI prompt 有帮助的轻量统计，不扩展成完整数据分析项目。",
+      "rationale": [
+        "传音、中冶看重 SQL、Python 数据处理和业务解释。",
+        "任务完成率、pending 数、最高压力日期能直接服务项目表达。",
+        "这条线是兼投加分，不抢 AI 应用主线。"
+      ],
+      "tasks": [
+        {
+          "id": "sql-progress",
+          "title": "写每日任务数、完成数、完成率 SQL",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：写每日任务数、完成数、完成率 SQL。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写每日任务数、完成数、完成率 SQL”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "stats-api",
+          "title": "实现 GET /board/api/stats",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：实现 GET /board/api/stats。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“实现 GET /board/api/stats”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "pandas-report",
+          "title": "用 Pandas 读取 SQLite 输出任务进度报告",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：用 Pandas 读取 SQLite 输出任务进度报告。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“用 Pandas 读取 SQLite 输出任务进度报告”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "stats-tests",
+          "title": "为统计逻辑补单元测试",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：为统计逻辑补单元测试。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“为统计逻辑补单元测试”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "data-bullets",
+          "title": "写数据分析岗可用的项目 bullet",
+          "eta": "45 分钟",
+          "how": [
+            "完成任务：写数据分析岗可用的项目 bullet。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写数据分析岗可用的项目 bullet”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-21": {
+      "title": "整理项目相关 Linux/终端命令 runbook",
+      "focus": "Git/Docker/Linux 工程基础日。补岗位常见工程能力，但只围绕当前项目运行和部署。",
+      "rationale": [
+        "悟舍、Appen、Python 后端岗位都看重 Git、终端、Docker 基础。",
+        "Docker 和 Git 是工程可信度加分项，但不应该早于项目主链路。",
+        "今天目标是能解释、能运行、能定位基础环境问题。"
+      ],
+      "tasks": [
+        {
+          "id": "git-safe",
+          "title": "建立安全 Git 工作流并检查 .gitignore",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：建立安全 Git 工作流并检查 .gitignore。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“建立安全 Git 工作流并检查 .gitignore”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "dockerfile",
+          "title": "编写 FastAPI Dockerfile",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：编写 FastAPI Dockerfile。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“编写 FastAPI Dockerfile”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "dockerignore",
+          "title": "补 .dockerignore 和部署注意事项",
+          "eta": "45 分钟",
+          "how": [
+            "完成任务：补 .dockerignore 和部署注意事项。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“补 .dockerignore 和部署注意事项”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "docker-run",
+          "title": "尝试 docker build/run 并访问 /board",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：尝试 docker build/run 并访问 /board。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“尝试 docker build/run 并访问 /board”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "linux-runbook",
+          "title": "整理项目相关 Linux/终端命令 runbook",
+          "eta": "45 分钟",
+          "how": [
+            "完成任务：整理项目相关 Linux/终端命令 runbook。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“整理项目相关 Linux/终端命令 runbook”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-22": {
+      "title": "限制非法 tool_name 和高风险操作",
+      "focus": "Agent 最小雏形日。只做和岗位直接相关的 Function Calling 思路，不做复杂多 Agent 框架。",
+      "rationale": [
+        "一起住好房、悟舍提到 Agent 和 Function Calling。",
+        "当前项目最适合抽象工具：查任务、查统计、创建任务、标记完成。",
+        "目标是展示工具调用思维，而不是堆框架名。"
+      ],
+      "tasks": [
+        {
+          "id": "tool-registry",
+          "title": "定义 list_day_tasks/get_stats/create_task/mark_done 工具注册表",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：定义 list_day_tasks/get_stats/create_task/mark_done 工具注册表。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“定义 list_day_tasks/get_stats/create_task/mark_done 工具注册表”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "tool-prompt",
+          "title": "写 Function Calling 风格 prompt",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：写 Function Calling 风格 prompt。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写 Function Calling 风格 prompt”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "agent-loop",
+          "title": "实现 observe -> plan -> tool suggestion 最小流程",
+          "eta": "2 小时",
+          "how": [
+            "完成任务：实现 observe -> plan -> tool suggestion 最小流程。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“实现 observe -> plan -> tool suggestion 最小流程”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "agent-safety",
+          "title": "限制非法 tool_name 和高风险操作",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：限制非法 tool_name 和高风险操作。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“限制非法 tool_name 和高风险操作”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-23": {
+      "title": "为检索和 fallback 补测试",
+      "focus": "RAG-lite 检索增强日。只用 SQLite 做最小检索增强，理解 RAG 流程，不上复杂向量库。",
+      "rationale": [
+        "RAG 是 AI 应用岗位加分项，但当前最适合做数据库检索版。",
+        "历史任务、how、criteria 就是可检索知识库。",
+        "目标是 query -> retrieve -> prompt -> answer 的最小闭环。"
+      ],
+      "tasks": [
+        {
+          "id": "search-tasks",
+          "title": "实现 search_board_tasks(keyword)",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：实现 search_board_tasks(keyword)。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“实现 search_board_tasks(keyword)”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "rag-prompt",
+          "title": "把检索结果拼成 RAG 风格 prompt",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：把检索结果拼成 RAG 风格 prompt。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“把检索结果拼成 RAG 风格 prompt”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "rag-api",
+          "title": "规划或开放 POST /board/api/search/answer",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：规划或开放 POST /board/api/search/answer。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“规划或开放 POST /board/api/search/answer”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "rag-tests",
+          "title": "为检索和 fallback 补测试",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：为检索和 fallback 补测试。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“为检索和 fallback 补测试”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-24": {
+      "title": "写 AI 应用工程 vs 算法训练的面试说明",
+      "focus": "非科智地算法基础补强日。只补 AI 应用岗面试会问的最小模型训练和经典模型认知。",
+      "rationale": [
+        "非科智地要求深度学习基础、YOLO、Transformer 等认知。",
+        "当前定位仍是 AI 应用工程，不转成算法复现项目。",
+        "目标是能诚实说明自己会什么、不会什么、项目属于哪类。"
+      ],
+      "tasks": [
+        {
+          "id": "dl-concepts",
+          "title": "梳理 loss、训练、验证、过拟合、Adam 基础概念",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：梳理 loss、训练、验证、过拟合、Adam 基础概念。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“梳理 loss、训练、验证、过拟合、Adam 基础概念”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "sklearn-demo",
+          "title": "跑一个 sklearn 或 PyTorch 最小训练 demo",
+          "eta": "2 小时",
+          "how": [
+            "完成任务：跑一个 sklearn 或 PyTorch 最小训练 demo。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“跑一个 sklearn 或 PyTorch 最小训练 demo”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "model-map",
+          "title": "建立 YOLO/Transformer/U-Net 概念地图",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：建立 YOLO/Transformer/U-Net 概念地图。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“建立 YOLO/Transformer/U-Net 概念地图”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "positioning",
+          "title": "写 AI 应用工程 vs 算法训练的面试说明",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写 AI 应用工程 vs 算法训练的面试说明。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写 AI 应用工程 vs 算法训练的面试说明”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-25": {
+      "title": "准备 20 个项目追问题和答案",
+      "focus": "投递材料日。把项目转成主投、兼投、数据岗三套叙事。",
+      "rationale": [
+        "项目价值必须能被简历和面试表达出来。",
+        "不同岗位需要不同项目重点，不应一份话术打全部。",
+        "今天服务真实投递。"
+      ],
+      "tasks": [
+        {
+          "id": "readme-final",
+          "title": "打磨 README 到可投递标准",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：打磨 README 到可投递标准。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“打磨 README 到可投递标准”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "ai-bullets",
+          "title": "写 AI 应用工程版项目 bullet",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写 AI 应用工程版项目 bullet。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写 AI 应用工程版项目 bullet”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "backend-bullets",
+          "title": "写 Python 后端版项目 bullet",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写 Python 后端版项目 bullet。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写 Python 后端版项目 bullet”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "data-bullets-final",
+          "title": "写数据分析版项目 bullet",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写数据分析版项目 bullet。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写数据分析版项目 bullet”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "interview-qa",
+          "title": "准备 20 个项目追问题和答案",
+          "eta": "2 小时",
+          "how": [
+            "完成任务：准备 20 个项目追问题和答案。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“准备 20 个项目追问题和答案”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    },
+    "2026-04-26": {
+      "title": "判断主投/兼投岗位是否达到投递线",
+      "focus": "综合验收日。按能运行、能测试、能解释、能投递四个标准判断项目是否达到投递线。",
+      "rationale": [
+        "最高标准最终不是任务多，而是证据链完整。",
+        "验收结果决定下一周继续补 AI Agent、数据分析，还是回补后端基础。",
+        "今天不新增大功能，只做真实交付检查。"
+      ],
+      "tasks": [
+        {
+          "id": "full-verify",
+          "title": "运行完整验证清单",
+          "eta": "1.5 小时",
+          "how": [
+            "完成任务：运行完整验证清单。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“运行完整验证清单”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "demo-script",
+          "title": "写 3 分钟项目演示脚本",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：写 3 分钟项目演示脚本。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“写 3 分钟项目演示脚本”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "gap-list",
+          "title": "列出项目风险和下一步补强项",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：列出项目风险和下一步补强项。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“列出项目风险和下一步补强项”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        },
+        {
+          "id": "submit-check",
+          "title": "判断主投/兼投岗位是否达到投递线",
+          "eta": "1 小时",
+          "how": [
+            "完成任务：判断主投/兼投岗位是否达到投递线。",
+            "明确要改的文件、函数或接口。",
+            "完成后用命令、Swagger、页面或测试验证结果。"
+          ],
+          "criteria": [
+            "“判断主投/兼投岗位是否达到投递线”有具体交付物，不是口头完成。",
+            "交付物能被复查、运行或追问实现细节。",
+            "如果没完成，要明确阻塞原因，而不是勾选完成。"
+          ],
+          "done": false
+        }
+      ]
+    }
+  }
+}
