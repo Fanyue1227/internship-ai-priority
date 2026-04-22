@@ -16,6 +16,8 @@ class AppRoutesTests(unittest.TestCase):
         self.assertIn('"/dates"', board_routes_source)
         self.assertIn('"/days/{date}"', board_routes_source)
         self.assertIn('"/days/{date}/ai-plan"', board_routes_source)
+        self.assertIn('"/agent/propose"', board_routes_source)
+        self.assertIn('"/agent/execute"', board_routes_source)
 
 
 if __name__ == "__main__":

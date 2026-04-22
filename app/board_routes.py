@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
+from app.agent_tools import execute_tool_action
 from app.board_services import (
     create_board_task as create_board_task_service,
     delete_board_task as delete_board_task_service,
@@ -8,8 +9,18 @@ from app.board_services import (
     update_board_task as update_board_task_service,
     update_board_task_done,
 )
-from app.schemas import BoardTaskDoneUpdate, BoardTaskCreate, BoardTaskUpdate
-from app.api_clients import build_board_day_prompt, get_board_day_ai_plan
+from app.schemas import (
+    BoardAgentExecuteRequest,
+    BoardAgentProposeRequest,
+    BoardTaskCreate,
+    BoardTaskDoneUpdate,
+    BoardTaskUpdate,
+)
+from app.api_clients import (
+    build_board_day_prompt,
+    get_agent_tool_proposal,
+    get_board_day_ai_plan,
+)
 
 router = APIRouter(prefix="/board/api", tags=["board"])
 
@@ -96,6 +107,45 @@ def delete_board_task(task_id: int):
         "message": "删除成功",
         "task_id": task_id,
     }
+
+@router.post("/agent/propose")
+def propose_agent_action(body: BoardAgentProposeRequest):
+    """Use native model tool calling to propose a board action without executing it."""
+    day = get_board_day(str(body.date))
+    if day is None:
+        raise HTTPException(status_code=404, detail="Board day not found")
+
+    try:
+        return get_agent_tool_proposal(
+            date=str(body.date),
+            message=body.message,
+            day=day,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/agent/execute")
+def execute_agent_action(body: BoardAgentExecuteRequest):
+    """Execute a tool call only after the frontend has confirmed it."""
+    try:
+        result = execute_tool_action(body.tool_name, body.arguments)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Board task or day not found")
+    if isinstance(result, dict) and result.get("ok") is False:
+        raise HTTPException(status_code=404, detail="Board task or day not found")
+
+    return {
+        "ok": True,
+        "message": "executed",
+        "result": result,
+    }
+
 
 @router.get("/days/{date}/prompt-preview")
 def preview_board_day_prompt(date: str):

@@ -1,4 +1,5 @@
 from datetime import date as Date
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -10,20 +11,34 @@ class BoardTaskDoneUpdate(BaseModel):
 
 
 class BoardTaskCreate(BaseModel):
-    """创建看板任务时，前端必须提交的字段。"""
+    """Request body for creating one board task."""
 
-    date: Date = Field(..., description="任务日期，格式 YYYY-MM-DD")
-    title: str = Field(..., min_length=1, max_length=100, description="任务标题")
-    eta: str = Field(..., min_length=1, description="预计耗时，例如：1 小时")
-    how: list[str] = Field(..., description="具体步骤列表")
-    criteria: list[str] = Field(..., description="验收标准列表")
+    date: Date = Field(..., description="Task date, format YYYY-MM-DD")
+    title: str = Field(..., min_length=1, max_length=100, description="Task title")
+    eta: str = Field(..., min_length=1, description="Estimated time")
+    how: list[str] = Field(..., description="Concrete task steps")
+    criteria: list[str] = Field(..., description="Acceptance criteria")
 
 
 class BoardTaskUpdate(BaseModel):
-    """更新看板任务时，前端可以提交的字段；都可选，支持部分更新。"""
+    """Request body for partially updating one board task."""
 
-    title: str | None = Field(None, min_length=1, max_length=100, description="任务标题")
-    eta: str | None = Field(None, min_length=1, description="预计耗时，例如：1 小时")
-    how: list[str] | None = Field(None, description="具体步骤列表")
-    criteria: list[str] | None = Field(None, description="验收标准列表")
-    done: bool | None = Field(None, description="是否完成")
+    title: str | None = Field(None, min_length=1, max_length=100, description="Task title")
+    eta: str | None = Field(None, min_length=1, description="Estimated time")
+    how: list[str] | None = Field(None, description="Concrete task steps")
+    criteria: list[str] | None = Field(None, description="Acceptance criteria")
+    done: bool | None = Field(None, description="Whether the task is done")
+
+
+class BoardAgentProposeRequest(BaseModel):
+    """Request body for asking the model to propose a native tool call."""
+
+    date: Date = Field(..., description="Board date, format YYYY-MM-DD")
+    message: str = Field(..., min_length=1, description="User natural-language command")
+
+
+class BoardAgentExecuteRequest(BaseModel):
+    """Request body for executing a confirmed tool call."""
+
+    tool_name: str = Field(..., min_length=1)
+    arguments: dict[str, Any] = Field(default_factory=dict)

@@ -3,6 +3,7 @@ import os
 
 import requests
 from dotenv import load_dotenv
+from app.agent_tools import describe_tool_action, get_agent_tool_definitions
 from app.board_services import get_board_day
 
 
@@ -109,6 +110,115 @@ def extract_model_text(data: dict, response_type: str) -> str:
         return text
     except (KeyError, IndexError, TypeError) as e:
         raise ValueError(f"DeepSeek 返回格式不符合预期: {e}")
+
+
+def build_agent_messages(date: str, message: str, day: dict) -> list[dict]:
+    """Build messages for provider-native task board tool calling."""
+    board_json = json.dumps(day, ensure_ascii=False)
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a task board agent. Use the provided native tools when "
+                "the user wants to create, update, complete, reopen, or delete a task. "
+                "Only choose tools using task ids that appear in the board data. "
+                "If the user only asks for advice or a summary, answer normally without a tool call. "
+                "All write operations will be confirmed by the frontend before execution."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Board date: {date}\n"
+                f"Current board data JSON:\n{board_json}\n\n"
+                f"User command:\n{message}"
+            ),
+        },
+    ]
+
+
+def extract_deepseek_tool_action(data: dict) -> dict:
+    """Extract the first OpenAI-compatible tool call from a DeepSeek response."""
+    try:
+        message = data["choices"][0]["message"]
+    except (KeyError, IndexError, TypeError) as e:
+        raise ValueError(f"DeepSeek tool response format is invalid: {e}") from e
+
+    tool_calls = message.get("tool_calls") or []
+    if not tool_calls:
+        return {}
+
+    tool_call = tool_calls[0]
+    function = tool_call.get("function") or {}
+    tool_name = function.get("name")
+    raw_arguments = function.get("arguments") or "{}"
+
+    if not tool_name:
+        raise ValueError("DeepSeek tool call did not include function.name")
+
+    try:
+        arguments = json.loads(raw_arguments)
+    except json.JSONDecodeError as e:
+        raise ValueError("DeepSeek tool call arguments are not valid JSON") from e
+
+    return {
+        "tool_call_id": tool_call.get("id", ""),
+        "tool_name": tool_name,
+        "arguments": arguments,
+        "requires_confirmation": True,
+        "confirmation_text": describe_tool_action(tool_name, arguments),
+    }
+
+
+def get_agent_tool_proposal(date: str, message: str, day: dict | None = None) -> dict:
+    """Ask the model for a provider-native tool call proposal."""
+    config = get_model_config()
+    if config["provider"] != "deepseek":
+        raise ValueError("Native function calling is currently implemented for deepseek only")
+
+    day = day if day is not None else get_board_day(date)
+    if day is None:
+        raise ValueError(f"Board day not found: {date}")
+
+    payload = {
+        "model": config["model_name"],
+        "messages": build_agent_messages(date, message, day),
+        "tools": get_agent_tool_definitions(),
+        "tool_choice": "auto",
+        "temperature": 0.1,
+        "stream": False,
+    }
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {config['api_token']}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(
+        config["api_url"],
+        headers=headers,
+        json=payload,
+        timeout=60,
+    )
+    response.raise_for_status()
+
+    try:
+        data = response.json()
+    except ValueError as e:
+        raise ValueError("Model API did not return valid JSON") from e
+
+    action = extract_deepseek_tool_action(data)
+    reply = data["choices"][0]["message"].get("content") or ""
+
+    return {
+        "ok": True,
+        "source": "model",
+        "provider": config["provider"],
+        "model_name": config["model_name"],
+        "reply": reply or ("请确认是否执行该操作。" if action else "没有需要执行的任务操作。"),
+        "requires_confirmation": bool(action),
+        "action": action or None,
+    }
 
 
 def build_board_day_task_lines(tasks: list[dict]) -> str:

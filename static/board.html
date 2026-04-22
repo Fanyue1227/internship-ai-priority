@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
     (function () {
-      const savedTheme = localStorage.getItem("internship-board-theme");
+      const themeKey = "internship-board-theme";
+      const savedTheme = localStorage.getItem(themeKey);
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
     })();
@@ -17,7 +18,7 @@
       --bg: #f3efe6;
       --panel: #fffaf1;
       --panel-strong: #fffdf8;
-      --panel-glass: rgba(255, 250, 241, 0.86);
+      --panel-glass: rgba(255, 250, 241, 0.9);
       --text: #1e1a17;
       --muted: #6a5d54;
       --line: #d7cabb;
@@ -25,6 +26,7 @@
       --accent-soft: #d8ebe6;
       --accent-strong: #11473d;
       --warning: #8d5b2d;
+      --danger: #a43f31;
       --shadow: 0 18px 40px rgba(72, 51, 32, 0.09);
     }
 
@@ -33,7 +35,7 @@
       --bg: #101715;
       --panel: #17211e;
       --panel-strong: #1d2925;
-      --panel-glass: rgba(23, 33, 30, 0.9);
+      --panel-glass: rgba(23, 33, 30, 0.92);
       --text: #f4eadc;
       --muted: #b9aa99;
       --line: #35443e;
@@ -41,6 +43,7 @@
       --accent-soft: #243d35;
       --accent-strong: #baf3df;
       --warning: #f0b46b;
+      --danger: #ff9b8f;
       --shadow: 0 20px 48px rgba(0, 0, 0, 0.34);
     }
 
@@ -55,7 +58,7 @@
 
     body {
       margin: 0;
-      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
       color: var(--text);
       background:
         radial-gradient(circle at top left, #fff8e6 0, transparent 22rem),
@@ -69,6 +72,13 @@
         radial-gradient(circle at top left, rgba(126, 216, 189, 0.18) 0, transparent 22rem),
         radial-gradient(circle at top right, rgba(240, 180, 107, 0.12) 0, transparent 20rem),
         linear-gradient(180deg, #15211d 0%, var(--bg) 100%);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
     }
 
     .page {
@@ -95,20 +105,13 @@
       color: var(--muted);
     }
 
-    h1,
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
     h1 {
       font-size: clamp(34px, 5vw, 54px);
       line-height: 0.98;
     }
 
     .subtitle {
-      max-width: 560px;
+      max-width: 660px;
       margin-top: 10px;
       color: var(--muted);
       font-size: 16px;
@@ -148,7 +151,10 @@
     }
 
     .date-controls,
-    .toolbar-actions {
+    .toolbar-actions,
+    .task-actions,
+    .form-actions,
+    .ai-actions {
       display: flex;
       gap: 10px;
       align-items: center;
@@ -156,33 +162,78 @@
     }
 
     button,
-    input[type="date"] {
+    input,
+    textarea {
       border: 1px solid var(--line);
-      border-radius: 999px;
       background: var(--panel-strong);
       color: var(--text);
-      padding: 10px 14px;
       font: inherit;
+    }
+
+    button,
+    input[type="date"] {
+      border-radius: 999px;
+      padding: 10px 14px;
     }
 
     button {
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       background: var(--accent-soft);
       transform: translateY(-1px);
     }
 
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border-radius: 16px;
+      padding: 11px 12px;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
     button:focus-visible,
-    input[type="date"]:focus-visible {
+    input:focus-visible,
+    textarea:focus-visible {
       outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
       outline-offset: 2px;
     }
 
+    .primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    html[data-theme="dark"] .primary {
+      color: #10211c;
+    }
+
     .secondary {
       color: var(--warning);
+    }
+
+    .danger {
+      color: var(--danger);
     }
 
     .theme-toggle {
@@ -201,8 +252,9 @@
 
     .board {
       display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
       gap: 18px;
+      align-items: start;
     }
 
     .panel {
@@ -226,12 +278,41 @@
       white-space: nowrap;
     }
 
-    .task-list {
+    .error-box {
+      display: none;
+      margin-bottom: 14px;
+      border: 1px solid color-mix(in srgb, var(--danger) 46%, var(--line));
+      background: color-mix(in srgb, var(--danger) 10%, var(--panel-strong));
+      color: var(--danger);
+      border-radius: 16px;
+      padding: 12px 14px;
+      line-height: 1.5;
+    }
+
+    .edit-form {
+      display: grid;
+      gap: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--panel-strong) 78%, transparent);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+    }
+
+    .task-list,
+    .ai-list {
       display: grid;
       gap: 14px;
     }
 
-    .task-card {
+    .task-card,
+    .ai-card {
       border: 1px solid var(--line);
       background: var(--panel-strong);
       border-radius: 20px;
@@ -264,7 +345,7 @@
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      align-items: baseline;
+      align-items: flex-start;
       margin-bottom: 12px;
     }
 
@@ -281,26 +362,71 @@
     .task-detail {
       display: grid;
       gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .detail-block h3 {
+    .detail-block h3,
+    .ai-card h3 {
       font-size: 14px;
       margin-bottom: 6px;
       color: var(--accent-strong);
     }
 
     .detail-block ul,
-    .rationale-list {
+    .rationale-list,
+    .ai-list ul {
       margin: 0;
       padding-left: 20px;
       color: var(--muted);
       line-height: 1.7;
     }
 
+    .focus-text,
+    .ai-summary,
+    .hint {
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
     .focus-text {
       color: var(--text);
-      line-height: 1.8;
       margin-bottom: 14px;
+    }
+
+    .notes-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .side-section {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    .agent-actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .agent-actions textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .agent-proposal {
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .agent-tool-json {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.86rem;
+      color: var(--muted);
     }
 
     .empty {
@@ -310,7 +436,8 @@
 
     @media (max-width: 840px) {
       .hero,
-      .board {
+      .board,
+      .form-grid {
         grid-template-columns: 1fr;
         display: grid;
       }
@@ -325,9 +452,9 @@
   <main class="page">
     <section class="hero">
       <div>
-        <p class="eyebrow">Local Task Board</p>
+        <p class="eyebrow">本地任务看板</p>
         <h1>实习任务看板</h1>
-        <p class="subtitle">数据来自 SQLite app.db，页面只负责展示和更新完成状态。</p>
+        <p class="subtitle">数据来自 SQLite app.db。首页用于查看任务和生成 AI 推荐顺序，需要新增、编辑、删除任务时再进入手动编辑界面。</p>
       </div>
       <div class="hero-meta">
         <div class="meta-card">
@@ -353,7 +480,8 @@
           <span id="theme-toggle-text">夜间模式</span>
         </button>
         <button id="jump-today" type="button">跳到今天</button>
-        <button id="reset-day" type="button" class="secondary">重置当天</button>
+        <button id="manual-mode-toggle" type="button" class="primary">手动编辑任务</button>
+        <button id="reset-day" type="button" class="secondary">重置完成状态</button>
       </div>
     </section>
 
@@ -361,25 +489,61 @@
       <section class="panel task-panel">
         <div class="panel-header">
           <div>
-            <p class="panel-kicker">Tasks</p>
-            <h2>今日任务</h2>
+            <p class="panel-kicker">任务</p>
+            <h2 id="task-panel-title">当天任务</h2>
           </div>
           <div class="status-badge" id="save-state">读取中</div>
         </div>
+
+        <div id="error-box" class="error-box"></div>
+
         <div id="task-list" class="task-list"></div>
       </section>
 
       <section class="panel notes-panel">
-        <div class="panel-header">
-          <div>
-            <p class="panel-kicker">Rationale</p>
-            <h2>为什么这样安排</h2>
+        <div>
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">安排说明</p>
+              <h2>为什么这样安排</h2>
+            </div>
+          </div>
+          <div class="rationale-box">
+            <p id="day-focus" class="focus-text"></p>
+            <ul id="day-rationale" class="rationale-list"></ul>
           </div>
         </div>
 
-        <div class="rationale-box">
-          <p id="day-focus" class="focus-text"></p>
-          <ul id="day-rationale" class="rationale-list"></ul>
+        <div class="side-section">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">AI 计划</p>
+              <h2>推荐执行顺序</h2>
+            </div>
+          </div>
+          <div class="ai-actions">
+            <button id="ai-plan-button" class="primary" type="button">生成推荐顺序</button>
+            <label class="hint">
+              <input id="ai-use-model" type="checkbox" checked>
+              调用模型
+            </label>
+          </div>
+          <p id="ai-summary" class="ai-summary">点击按钮后，会根据当天未完成任务生成推荐执行顺序。</p>
+          <div id="ai-result" class="ai-list"></div>
+        </div>
+
+        <div class="side-section">
+          <div class="panel-header">
+            <div>
+              <p class="panel-kicker">AI 操作</p>
+              <h2>任务操作助手</h2>
+            </div>
+          </div>
+          <div class="agent-actions">
+            <textarea id="agent-message" placeholder="例如：把 SQL 练习任务标记为完成"></textarea>
+            <button id="agent-propose-button" class="primary" type="button">生成操作建议</button>
+            <div id="agent-result"></div>
+          </div>
         </div>
       </section>
     </section>
@@ -389,6 +553,10 @@
     let availableDates = [];
     let currentDate = "";
     let dayData = null;
+    let editingTaskId = null;
+    let manualMode = false;
+    let pendingAgentAction = null;
+    let busyCount = 0;
     const THEME_KEY = "internship-board-theme";
 
     function getSystemTheme() {
@@ -419,12 +587,90 @@
       saveState.style.opacity = faded ? 0.55 : 1;
     }
 
-    async function fetchJson(url, options) {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        throw new Error(`${response.status} ${response.statusText}`);
+    function showError(message) {
+      const box = document.getElementById("error-box");
+      if (!box) return;
+      if (!message) {
+        box.style.display = "none";
+        box.textContent = "";
+        return;
       }
-      return response.json();
+      box.textContent = message;
+      box.style.display = "block";
+    }
+
+    function setBusy(isBusy, text = "处理中") {
+      busyCount += isBusy ? 1 : -1;
+      busyCount = Math.max(0, busyCount);
+      document.querySelectorAll("button").forEach((button) => {
+        button.disabled = busyCount > 0;
+      });
+      if (busyCount > 0) {
+        setSaveState(text);
+      }
+    }
+
+    function syncManualModeControls() {
+      const toggle = document.getElementById("manual-mode-toggle");
+      const title = document.getElementById("task-panel-title");
+
+      if (toggle) toggle.textContent = manualMode ? "返回看板首页" : "手动编辑任务";
+      if (title) title.textContent = manualMode ? "手动编辑任务" : "当天任务";
+    }
+
+    function setManualMode(nextManualMode) {
+      manualMode = nextManualMode;
+      if (!manualMode) {
+        editingTaskId = null;
+      }
+      showError("");
+      syncManualModeControls();
+      render();
+    }
+
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, options);
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const detail = data && data.detail ? data.detail : `${response.status} ${response.statusText}`;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+
+      return data;
+    }
+
+    function linesFromTextarea(value) {
+      return value
+        .split("\n")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    function linesToText(items) {
+      return (items || []).join("\n");
+    }
+
+    function createEl(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text !== undefined) el.textContent = text;
+      return el;
+    }
+
+    function appendList(parent, items) {
+      const ul = document.createElement("ul");
+      (items || []).forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        ul.appendChild(li);
+      });
+      parent.appendChild(ul);
     }
 
     function chooseInitialDate() {
@@ -435,11 +681,12 @@
 
     async function loadDates() {
       availableDates = await fetchJson("/board/api/dates");
-      currentDate = chooseInitialDate();
+      currentDate = currentDate || chooseInitialDate();
     }
 
     async function loadDay(date) {
       setSaveState("读取中");
+      showError("");
       currentDate = date;
       const picker = document.getElementById("date-picker");
       if (picker) picker.value = currentDate;
@@ -450,27 +697,226 @@
       } catch (error) {
         dayData = null;
         setSaveState("读取失败");
+        showError(`读取看板失败：${error.message}`);
       }
 
+      editingTaskId = null;
+      clearAiResult();
       render();
     }
 
+    async function refreshCurrentDay() {
+      await loadDates();
+      await loadDay(currentDate);
+    }
+
     async function updateTaskDone(taskId, done) {
-      setSaveState("保存中");
-      const updated = await fetchJson(`/board/api/tasks/${taskId}/done`, {
+      return fetchJson(`/board/api/tasks/${taskId}/done`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ done }),
       });
-      setSaveState("保存成功", true);
-      return updated;
+    }
+
+    async function updateTask(taskId, payload) {
+      return fetchJson(`/board/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+
+    async function deleteTask(taskId) {
+      return fetchJson(`/board/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+    }
+
+    async function handleSaveEdit(taskId) {
+      const payload = {
+        title: document.getElementById(`edit-title-${taskId}`).value.trim(),
+        eta: document.getElementById(`edit-eta-${taskId}`).value.trim(),
+        how: linesFromTextarea(document.getElementById(`edit-how-${taskId}`).value),
+        criteria: linesFromTextarea(document.getElementById(`edit-criteria-${taskId}`).value),
+      };
+
+      if (!payload.title || !payload.eta || payload.how.length === 0 || payload.criteria.length === 0) {
+        showError("保存失败：任务标题、预计时间、具体步骤和验收标准都不能为空。");
+        return;
+      }
+
+      setBusy(true, "保存中");
+      showError("");
+      try {
+        await updateTask(taskId, payload);
+        editingTaskId = null;
+        await refreshCurrentDay();
+        setSaveState("保存成功", true);
+      } catch (error) {
+        setSaveState("保存失败");
+        showError(`保存任务失败：${error.message}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function handleDeleteTask(task) {
+      const ok = window.confirm(`确认删除任务“${task.title}”吗？`);
+      if (!ok) return;
+
+      setBusy(true, "删除中");
+      showError("");
+      try {
+        await deleteTask(task.id);
+        await refreshCurrentDay();
+        setSaveState("删除成功", true);
+      } catch (error) {
+        setSaveState("删除失败");
+        showError(`删除任务失败：${error.message}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function handleAiPlan() {
+      if (!currentDate) return;
+
+      const useModel = document.getElementById("ai-use-model").checked;
+      const url = `/board/api/days/${currentDate}/ai-plan${useModel ? "" : "?use_model=false"}`;
+      const buttonText = useModel ? "模型生成中" : "规则生成中";
+
+      setBusy(true, buttonText);
+      showError("");
+      try {
+        const result = await fetchJson(url, { method: "POST" });
+        renderAiResult(result);
+        setSaveState("AI 推荐已生成", true);
+      } catch (error) {
+        clearAiResult();
+        setSaveState("AI 推荐失败");
+        showError(`生成 AI 推荐失败：${error.message}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function clearAgentResult() {
+      pendingAgentAction = null;
+      const resultBox = document.getElementById("agent-result");
+      if (resultBox) resultBox.innerHTML = "";
+    }
+
+    function renderAgentProposal(result) {
+      const resultBox = document.getElementById("agent-result");
+      if (!resultBox) return;
+
+      resultBox.innerHTML = "";
+      pendingAgentAction = result.action || null;
+
+      const wrapper = createEl("div", "agent-proposal");
+      wrapper.appendChild(createEl("p", "", result.reply || "模型已返回操作建议。"));
+
+      if (result.requires_confirmation && result.action) {
+        wrapper.appendChild(createEl("strong", "", result.action.confirmation_text || "请确认是否执行该操作。"));
+        wrapper.appendChild(
+          createEl(
+            "pre",
+            "agent-tool-json",
+            JSON.stringify(
+              {
+                tool_name: result.action.tool_name,
+                arguments: result.action.arguments,
+              },
+              null,
+              2,
+            ),
+          ),
+        );
+
+        const actions = createEl("div", "task-actions");
+        const confirmButton = createEl("button", "primary", "确认执行");
+        confirmButton.type = "button";
+        confirmButton.addEventListener("click", handleAgentExecute);
+
+        const cancelButton = createEl("button", "", "取消");
+        cancelButton.type = "button";
+        cancelButton.addEventListener("click", clearAgentResult);
+
+        actions.appendChild(confirmButton);
+        actions.appendChild(cancelButton);
+        wrapper.appendChild(actions);
+      } else {
+        wrapper.appendChild(createEl("p", "empty", "这次没有需要修改数据库的操作。"));
+      }
+
+      resultBox.appendChild(wrapper);
+    }
+
+    async function handleAgentPropose() {
+      if (!currentDate) return;
+
+      const messageInput = document.getElementById("agent-message");
+      const message = messageInput ? messageInput.value.trim() : "";
+      if (!message) {
+        showError("请输入你希望 AI 执行的任务操作。");
+        return;
+      }
+
+      setBusy(true, "AI 分析操作中");
+      showError("");
+      try {
+        const result = await fetchJson("/board/api/agent/propose", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({date: currentDate, message}),
+        });
+        renderAgentProposal(result);
+        setSaveState("AI 操作建议已生成", true);
+      } catch (error) {
+        clearAgentResult();
+        setSaveState("AI 操作建议失败");
+        showError(`生成 AI 操作建议失败：${error.message}`);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    async function handleAgentExecute() {
+      if (!pendingAgentAction) return;
+
+      const ok = window.confirm(pendingAgentAction.confirmation_text || "确认执行该操作吗？");
+      if (!ok) return;
+
+      setBusy(true, "执行 AI 操作中");
+      showError("");
+      try {
+        await fetchJson("/board/api/agent/execute", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            tool_name: pendingAgentAction.tool_name,
+            arguments: pendingAgentAction.arguments,
+          }),
+        });
+        clearAgentResult();
+        await refreshCurrentDay();
+        setSaveState("AI 操作已执行", true);
+      } catch (error) {
+        setSaveState("AI 操作执行失败");
+        showError(`执行 AI 操作失败：${error.message}`);
+      } finally {
+        setBusy(false);
+      }
     }
 
     function renderEmpty(message) {
       const list = document.getElementById("task-list");
-      if (list) list.innerHTML = `<p class="empty">${message}</p>`;
+      if (list) list.innerHTML = "";
+      if (list) list.appendChild(createEl("p", "empty", message));
 
       const df = document.getElementById("day-focus");
       if (df) df.textContent = "";
@@ -483,19 +929,21 @@
     }
 
     function render() {
+      syncManualModeControls();
+
       const picker = document.getElementById("date-picker");
       if (picker) picker.value = currentDate;
 
-      const dDate = document.getElementById("display-date");
-      if (dDate) dDate.textContent = currentDate || "-";
+      const displayDate = document.getElementById("display-date");
+      if (displayDate) displayDate.textContent = currentDate || "-";
 
       if (!dayData) {
-        renderEmpty("这一天没有任务数据。");
+        renderEmpty("这一天没有看板数据。");
         return;
       }
 
-      const df = document.getElementById("day-focus");
-      if (df) df.textContent = dayData.focus || "";
+      const focus = document.getElementById("day-focus");
+      if (focus) focus.textContent = dayData.focus || "";
 
       const rationaleUl = document.getElementById("day-rationale");
       if (rationaleUl) {
@@ -515,74 +963,180 @@
 
       tasks.forEach((task) => {
         if (task.done) doneCount += 1;
-
-        const card = document.createElement("div");
-        card.className = "task-card" + (task.done ? " done" : "");
-
-        const top = document.createElement("div");
-        top.className = "task-top";
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "task-checkbox";
-        checkbox.checked = task.done;
-        checkbox.addEventListener("change", async (event) => {
-          const nextDone = event.target.checked;
-          checkbox.disabled = true;
-
-          try {
-            const updated = await updateTaskDone(task.id, nextDone);
-            task.done = updated.done;
-          } catch (error) {
-            checkbox.checked = task.done;
-            setSaveState("保存失败");
-          } finally {
-            checkbox.disabled = false;
-            render();
-          }
-        });
-
-        const main = document.createElement("div");
-        main.className = "task-main";
-
-        const titleRow = document.createElement("div");
-        titleRow.className = "task-title-row";
-
-        const titleObj = document.createElement("strong");
-        titleObj.className = "task-title";
-        titleObj.textContent = task.title;
-
-        const meta = document.createElement("span");
-        meta.className = "task-meta";
-        meta.textContent = task.eta;
-
-        titleRow.appendChild(titleObj);
-        titleRow.appendChild(meta);
-        main.appendChild(titleRow);
-
-        const detail = document.createElement("div");
-        detail.className = "task-detail";
-
-        const howBlock = document.createElement("div");
-        howBlock.className = "detail-block";
-        howBlock.innerHTML = `<h3>具体怎么做？</h3><ul>${task.how.map((h) => `<li>${h}</li>`).join("")}</ul>`;
-
-        const critBlock = document.createElement("div");
-        critBlock.className = "detail-block";
-        critBlock.innerHTML = `<h3>怎样算达标？</h3><ul>${task.criteria.map((c) => `<li>${c}</li>`).join("")}</ul>`;
-
-        detail.appendChild(howBlock);
-        detail.appendChild(critBlock);
-        main.appendChild(detail);
-        top.appendChild(checkbox);
-        top.appendChild(main);
-        card.appendChild(top);
-
+        const card = editingTaskId === task.id ? renderEditCard(task) : renderTaskCard(task);
         if (taskList) taskList.appendChild(card);
       });
 
-      const pt = document.getElementById("progress-text");
-      if (pt) pt.textContent = `${doneCount} / ${tasks.length}`;
+      if (tasks.length === 0 && taskList) {
+        taskList.appendChild(createEl("p", "empty", "这一天没有任务。"));
+      }
+
+      const progress = document.getElementById("progress-text");
+      if (progress) progress.textContent = `${doneCount} / ${tasks.length}`;
+    }
+
+    function renderTaskCard(task) {
+      const card = createEl("div", `task-card${task.done ? " done" : ""}`);
+      const top = createEl("div", "task-top");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "task-checkbox";
+      checkbox.checked = task.done;
+      checkbox.addEventListener("change", async (event) => {
+        const nextDone = event.target.checked;
+        checkbox.disabled = true;
+        setBusy(true, "保存中");
+        showError("");
+
+        try {
+          const updated = await updateTaskDone(task.id, nextDone);
+          task.done = updated.done;
+          setSaveState("保存成功", true);
+        } catch (error) {
+          checkbox.checked = task.done;
+          setSaveState("保存失败");
+          showError(`更新完成状态失败：${error.message}`);
+        } finally {
+          checkbox.disabled = false;
+          setBusy(false);
+          render();
+        }
+      });
+
+      const main = createEl("div", "task-main");
+      const titleRow = createEl("div", "task-title-row");
+
+      titleRow.appendChild(createEl("strong", "task-title", task.title));
+      titleRow.appendChild(createEl("span", "task-meta", task.eta));
+      main.appendChild(titleRow);
+
+      const detail = createEl("div", "task-detail");
+      const howBlock = createEl("div", "detail-block");
+      howBlock.appendChild(createEl("h3", "", "具体步骤"));
+      appendList(howBlock, task.how);
+
+      const criteriaBlock = createEl("div", "detail-block");
+      criteriaBlock.appendChild(createEl("h3", "", "验收标准"));
+      appendList(criteriaBlock, task.criteria);
+
+      detail.appendChild(howBlock);
+      detail.appendChild(criteriaBlock);
+      main.appendChild(detail);
+
+      if (manualMode) {
+        const actions = createEl("div", "task-actions");
+        const editButton = createEl("button", "", "编辑");
+        editButton.type = "button";
+        editButton.addEventListener("click", () => {
+          editingTaskId = task.id;
+          showError("");
+          render();
+        });
+
+        const deleteButton = createEl("button", "danger", "删除");
+        deleteButton.type = "button";
+        deleteButton.addEventListener("click", () => handleDeleteTask(task));
+
+        actions.appendChild(editButton);
+        actions.appendChild(deleteButton);
+        main.appendChild(actions);
+      }
+
+      top.appendChild(checkbox);
+      top.appendChild(main);
+      card.appendChild(top);
+      return card;
+    }
+
+    function renderEditCard(task) {
+      const card = createEl("div", "task-card");
+      const form = createEl("div", "edit-form");
+      form.appendChild(createEl("h3", "", "编辑任务"));
+
+      const grid = createEl("div", "form-grid");
+      const titleLabel = createEl("label", "", "任务标题");
+      const titleInput = document.createElement("input");
+      titleInput.id = `edit-title-${task.id}`;
+      titleInput.type = "text";
+      titleInput.value = task.title;
+      titleLabel.appendChild(titleInput);
+
+      const etaLabel = createEl("label", "", "预计时间");
+      const etaInput = document.createElement("input");
+      etaInput.id = `edit-eta-${task.id}`;
+      etaInput.type = "text";
+      etaInput.value = task.eta;
+      etaLabel.appendChild(etaInput);
+
+      grid.appendChild(titleLabel);
+      grid.appendChild(etaLabel);
+      form.appendChild(grid);
+
+      const howLabel = createEl("label", "", "具体步骤，一行一条");
+      const howText = document.createElement("textarea");
+      howText.id = `edit-how-${task.id}`;
+      howText.value = linesToText(task.how);
+      howLabel.appendChild(howText);
+      form.appendChild(howLabel);
+
+      const criteriaLabel = createEl("label", "", "验收标准，一行一条");
+      const criteriaText = document.createElement("textarea");
+      criteriaText.id = `edit-criteria-${task.id}`;
+      criteriaText.value = linesToText(task.criteria);
+      criteriaLabel.appendChild(criteriaText);
+      form.appendChild(criteriaLabel);
+
+      const actions = createEl("div", "form-actions");
+      const saveButton = createEl("button", "primary", "保存");
+      saveButton.type = "button";
+      saveButton.addEventListener("click", () => handleSaveEdit(task.id));
+
+      const cancelButton = createEl("button", "", "取消");
+      cancelButton.type = "button";
+      cancelButton.addEventListener("click", () => {
+        editingTaskId = null;
+        showError("");
+        render();
+      });
+
+      actions.appendChild(saveButton);
+      actions.appendChild(cancelButton);
+      form.appendChild(actions);
+      card.appendChild(form);
+      return card;
+    }
+
+    function renderAiResult(result) {
+      const summary = document.getElementById("ai-summary");
+      const list = document.getElementById("ai-result");
+      if (!summary || !list) return;
+
+      const sourceText = result.source === "model" ? "模型生成" : "规则 fallback";
+      const fallbackReason = result.fallback_reason ? `；原因：${result.fallback_reason}` : "";
+      summary.textContent = `${sourceText}${fallbackReason}。${result.plan?.summary || ""}`;
+
+      list.innerHTML = "";
+      const tasks = result.plan?.ordered_tasks || [];
+      if (tasks.length === 0) {
+        list.appendChild(createEl("p", "empty", "没有需要安排的未完成任务。"));
+        return;
+      }
+
+      tasks.forEach((task, index) => {
+        const card = createEl("div", "ai-card");
+        card.appendChild(createEl("h3", "", `${index + 1}. ${task.title || "未命名任务"}`));
+        card.appendChild(createEl("p", "hint", task.eta || ""));
+        card.appendChild(createEl("p", "ai-summary", task.reason || "根据当前任务数据推荐。"));
+        list.appendChild(card);
+      });
+    }
+
+    function clearAiResult() {
+      const summary = document.getElementById("ai-summary");
+      const list = document.getElementById("ai-result");
+      if (summary) summary.textContent = "点击按钮后，会根据当天未完成任务生成推荐执行顺序。";
+      if (list) list.innerHTML = "";
     }
 
     function shiftDate(days) {
@@ -601,18 +1155,31 @@
 
     async function resetCurrentDay() {
       if (!dayData) return;
-      for (const task of dayData.tasks || []) {
-        if (task.done) {
-          await updateTaskDone(task.id, false);
-          task.done = false;
+      setBusy(true, "重置中");
+      showError("");
+      try {
+        for (const task of dayData.tasks || []) {
+          if (task.done) {
+            await updateTaskDone(task.id, false);
+            task.done = false;
+          }
         }
+        setSaveState("重置成功", true);
+      } catch (error) {
+        setSaveState("重置失败");
+        showError(`重置当天失败：${error.message}`);
+      } finally {
+        setBusy(false);
+        render();
       }
-      render();
     }
 
     async function init() {
       applyTheme(document.documentElement.dataset.theme || getSystemTheme(), false);
       document.getElementById("theme-toggle")?.addEventListener("click", toggleTheme);
+      document.getElementById("manual-mode-toggle")?.addEventListener("click", () => {
+        setManualMode(!manualMode);
+      });
       document.getElementById("prev-day")?.addEventListener("click", () => shiftDate(-1));
       document.getElementById("next-day")?.addEventListener("click", () => shiftDate(1));
       document.getElementById("jump-today")?.addEventListener("click", () => {
@@ -623,12 +1190,16 @@
       document.getElementById("date-picker")?.addEventListener("change", (event) => {
         if (event.target.value) loadDay(event.target.value);
       });
+      document.getElementById("ai-plan-button")?.addEventListener("click", handleAiPlan);
+      document.getElementById("agent-propose-button")?.addEventListener("click", handleAgentPropose);
+      syncManualModeControls();
 
       try {
         await loadDates();
         await loadDay(currentDate);
       } catch (error) {
         setSaveState("初始化失败");
+        showError(`初始化看板失败：${error.message}`);
         renderEmpty("无法从后端读取任务看板数据。");
       }
     }
