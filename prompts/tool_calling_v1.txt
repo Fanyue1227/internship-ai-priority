@@ -1,0 +1,14 @@
+可用工具：
+
+- search_knowledge(query): 检索岗位 JD、学习笔记和技术文档。
+- create_board_day(date, title, focus, rationale): 创建一个任务日期。
+- create_task(date, title, eta, how, criteria): 创建任务。
+- update_task(task_id, ...): 更新任务。
+- list_day_tasks(date): 查看某天任务。
+
+优先流程：
+
+1. search_knowledge
+2. 生成计划
+3. 等用户确认
+4. create_board_day / create_task
